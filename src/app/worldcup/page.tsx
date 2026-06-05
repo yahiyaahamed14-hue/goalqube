@@ -168,30 +168,20 @@ export default function WorldCupPage() {
           </Link>
 
           <Link
-            href="/worldcup/watch"
+            href="/matches"
             className="bg-white/5 border border-white/10 rounded-[30px] p-10 hover:bg-white/10 transition"
           >
             <h2 className="text-3xl font-black">
-              📺 Watch World Cup
+              ⚽ Match Live Scores
             </h2>
 
             <p className="text-zinc-400 mt-4">
-              Official streaming platforms.
+              View live scores, match statistics and real-time updates.
             </p>
           </Link>
 
-          <Link
-            href="/worldcup/live"
-            className="bg-white/5 border border-white/10 rounded-[30px] p-8 hover:bg-white/10 transition"
-          >
-            <h2 className="text-3xl font-black">
-              LIVE MATCHES
-            </h2>
+          
 
-            <p className="text-zinc-400 mt-3">
-              Watch World Cup live updates
-           </p>
-          </Link>
 
         </div>
 
