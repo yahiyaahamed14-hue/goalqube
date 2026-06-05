@@ -1,31 +1,47 @@
+"use client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 
-const worldCupDate = new Date("2026-06-11T00:00:00");
-const today = new Date();
 
-const diffTime =
-  worldCupDate.getTime() - today.getTime();
-
-const daysLeft = Math.floor(
-  diffTime / (1000 * 60 * 60 * 24)
-);
-
-const hoursLeft = Math.floor(
-  (diffTime % (1000 * 60 * 60 * 24)) /
-  (1000 * 60 * 60)
-);
-
-const minutesLeft = Math.floor(
-  (diffTime % (1000 * 60 * 60)) /
-  (1000 * 60)
-);
-
-const secondsLeft = Math.floor(
-  (diffTime % (1000 * 60)) / 1000
-);
 
 export default function WorldCupPage() {
+  const worldCupDate = new Date("2026-06-11T00:00:00");
+
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+
+      const distance =
+        worldCupDate.getTime() - now;
+
+      setTimeLeft({
+        days: Math.floor(
+          distance / (1000 * 60 * 60 * 24)
+        ),
+        hours: Math.floor(
+          (distance % (1000 * 60 * 60 * 24)) /
+          (1000 * 60 * 60)
+        ),
+        minutes: Math.floor(
+          (distance % (1000 * 60 * 60)) /
+          (1000 * 60)
+        ),
+        seconds: Math.floor(
+          (distance % (1000 * 60)) / 1000
+        ),
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
   return (
     <main className="min-h-screen bg-black text-white">
 
@@ -58,7 +74,7 @@ export default function WorldCupPage() {
           </p>
 
           <h2 className="text-6xl font-black mt-4">
-            {daysLeft}
+            {timeLeft.days}
           </h2>
 
           <p className="text-xl font-bold mt-2">
@@ -66,7 +82,7 @@ export default function WorldCupPage() {
           </p>
 
           <p className="text-lg font-semibold mt-4">
-            {hoursLeft} Hours • {minutesLeft} Minutes • {secondsLeft} Seconds
+            {timeLeft.hours} Hours • {timeLeft.minutes} Minutes • {timeLeft.seconds} Seconds
           </p>
 
         </div>
