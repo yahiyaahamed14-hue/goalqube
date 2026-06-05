@@ -1,14 +1,28 @@
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 
-const worldCupDate = new Date("2026-06-11");
+const worldCupDate = new Date("2026-06-11T00:00:00");
 const today = new Date();
 
 const diffTime =
   worldCupDate.getTime() - today.getTime();
 
-const daysLeft = Math.ceil(
+const daysLeft = Math.floor(
   diffTime / (1000 * 60 * 60 * 24)
+);
+
+const hoursLeft = Math.floor(
+  (diffTime % (1000 * 60 * 60 * 24)) /
+  (1000 * 60 * 60)
+);
+
+const minutesLeft = Math.floor(
+  (diffTime % (1000 * 60 * 60)) /
+  (1000 * 60)
+);
+
+const secondsLeft = Math.floor(
+  (diffTime % (1000 * 60)) / 1000
 );
 
 export default function WorldCupPage() {
@@ -49,6 +63,10 @@ export default function WorldCupPage() {
 
           <p className="text-xl font-bold mt-2">
             Days Remaining
+          </p>
+
+          <p className="text-lg font-semibold mt-4">
+            {hoursLeft} Hours • {minutesLeft} Minutes • {secondsLeft} Seconds
           </p>
 
         </div>
