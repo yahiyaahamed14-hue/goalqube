@@ -1,36 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Goalqube — Matchday Edit
 
-## Getting Started
+Next.js football website redesigned from the supplied Liverpool eCommerce and football dashboard references. The home page combines an ivory and burgundy editorial layout, yellow highlights, player portrait, side navigation, matchday tabs, a club spotlight carousel, editorial links and a searchable club directory.
 
-First, run the development server:
+The approved black-and-white, tagline-free Goalqube logo is used in the shared navigation and footer. Existing football routes, Firebase authentication and Vercel setup are retained.
 
-```bash
+## Run locally
+
+```sh
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. Production validation: `npm run build`, then `npm start`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Main files
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `src/components/MatchdayExperience.tsx`: new homepage and local UI interactions.
+- `src/components/matchday.css`: responsive layout and styling.
+- `src/components/Brand.tsx`: approved logo artwork in SVG viewports.
+- `src/components/Navbar.tsx`: existing Firebase-aware shared navigation.
+- `public/images/goalqube-player.png`: ImageGen editorial player portrait, inspired by the supplied reference.
+- `public/brand/goalqube-logo-v6.png`: approved logo without tagline.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The landing page shows editorial football content, with no fabricated live scores, betting odds or player statistics. Existing data pages continue to use their original providers. Publish source changes through the connected GitHub/Vercel workflow when ready.

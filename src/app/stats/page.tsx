@@ -25,7 +25,7 @@ const stats = [
 export default function StatsPage() {
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="md-page md-inner-page min-h-screen">
 
       <Navbar />
 

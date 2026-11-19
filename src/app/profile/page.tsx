@@ -27,7 +27,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white flex items-center justify-center px-6">
+    <main className="md-page md-inner-page min-h-screen flex items-center justify-center px-6">
 
       <div className="w-full max-w-xl bg-white/5 border border-white/10 rounded-3xl p-10">
 

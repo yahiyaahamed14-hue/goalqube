@@ -1,198 +1,80 @@
-"use client";
+import MatchClub from "@/components/MatchClub";
+import { leagues, type Team } from "@/app/services/matchCentre";
 
-import { useEffect, useState } from "react";
+export const standingsLeagues = {
+  "eng.1": leagues["eng.1"],
+  "esp.1": leagues["esp.1"],
+  "fra.1": leagues["fra.1"],
+  "ind.1": leagues["ind.1"],
+  "uefa.champions": leagues["uefa.champions"],
+  "ger.1": "Bundesliga",
+  "ita.1": "Serie A",
+};
 
-const leagues = [
-  {
-    name: "Premier League",
-    id: "4328",
-  },
-  {
-    name: "La Liga",
-    id: "4335",
-  },
-  {
-    name: "Bundesliga",
-    id: "4331",
-  },
-  {
-    name: "Serie A",
-    id: "4332",
-  },
-  {
-    name: "Ligue 1",
-    id: "4334",
-  },
-];
+type StandingsLeague = keyof typeof standingsLeagues;
+type Entry = { team: Team & { id: string }; stats: { name: string; displayValue: string }[] };
+type Standings = {
+  season?: { displayName: string };
+  children?: { id: string; name: string; standings?: { entries: Entry[] } }[];
+};
 
-export default function LeagueStandings() {
+const columns = [
+  ["gamesPlayed", "P", "Played"],
+  ["wins", "W", "Won"],
+  ["ties", "D", "Drawn"],
+  ["losses", "L", "Lost"],
+  ["pointsFor", "GF", "Goals for"],
+  ["pointsAgainst", "GA", "Goals against"],
+  ["pointDifferential", "GD", "Goal difference"],
+  ["points", "Pts", "Points"],
+] as const;
 
-  const [leagueId, setLeagueId] =
-    useState("4328");
+export default async function LeagueStandings({ league }: { league: StandingsLeague }) {
+  let data: Standings | undefined;
+  try {
+    const response = await fetch(`https://site.api.espn.com/apis/v2/sports/soccer/${league}/standings`, {
+      next: { revalidate: 300 },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (response.ok) data = await response.json();
+  } catch {
+    // A temporary provider failure shouldn't break the standings page.
+  }
 
-  const [table, setTable] = useState<any[]>([]);
+  if (!data) return <p role="status" className="md-details-card mt-6">Standings are temporarily unavailable. Please check again shortly.</p>;
 
-  const [loading, setLoading] =
-    useState(true);
-
-  useEffect(() => {
-
-    async function loadTable() {
-
-      setLoading(true);
-
-      const response = await fetch(
-        `https://www.thesportsdb.com/api/v1/json/3/lookuptable.php?l=${leagueId}&s=2025-2026`
-      );
-
-      const data = await response.json();
-      console.log(data);
-      console.log(data.table?.length);
-
-      setTable(
-        data.table ||
-        data.league ||
-        []
-      );
-      console.log(
-        "Teams Loaded:", 
-        (data.table || data.league || []).length
-      );
-
-      setLoading(false);
-    }
-
-    loadTable();
-
-  }, [leagueId]);
+  const tables = data.children?.filter((group) => group.standings?.entries.length) ?? [];
+  if (!tables.length) return <p className="md-details-card mt-6">No standings have been published for this competition yet.</p>;
 
   return (
-
-    <section className="px-6 lg:px-16 pb-24">
-
-      {/* League Selector */}
-      <div className="mb-8">
-
-        <select
-          value={leagueId}
-          onChange={(e) =>
-            setLeagueId(e.target.value)
-          }
-          className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3"
-        >
-
-          {leagues.map((league) => (
-
-            <option
-              key={league.id}
-              value={league.id}
-            >
-              {league.name}
-            </option>
-
-          ))}
-
-        </select>
-
-      </div>
-
-      {loading ? (
-
-        <p className="text-zinc-400">
-          Loading standings...
-        </p>
-
-      ) : (
-
-        <div className="overflow-x-auto">
-
-          <table className="w-full">
-
+    <>
+      {data.season?.displayName && <p className="mt-6 text-zinc-400">{data.season.displayName}</p>}
+      {tables.map((group) => (
+        <div key={group.id} className="md-standings-panel" tabIndex={0} role="region" aria-label={group.name}>
+          <table className="md-standings-table">
+            <caption>{group.name}</caption>
             <thead>
-
-              <tr className="border-b border-white/10">
-
-                <th className="py-4 text-left">
-                  POS
-                </th>
-
-                <th className="py-4 text-left">
-                  TEAM
-                </th>
-
-                <th className="py-4 text-left">
-                  PTS
-                </th>
-
-                <th className="py-4 text-left">
-                  PLAYED
-                </th>
-
-                <th className="py-4 text-left">
-                  W
-                </th>
-
-                <th className="py-4 text-left">
-                  D
-                </th>
-
-                <th className="py-4 text-left">
-                  L
-                </th>
-
+              <tr>
+                <th scope="col" aria-label="Position">#</th>
+                <th scope="col">Club</th>
+                {columns.map(([name, shortLabel, label]) => <th key={name} scope="col" aria-label={label}>{shortLabel}</th>)}
               </tr>
-
             </thead>
-
             <tbody>
-
-              {table.map((team: any) => (
-
-                <tr
-                  key={team.idTeam}
-                  className="border-b border-white/5"
-                >
-
-                  <td className="py-4">
-                    {team.intRank}
-                  </td>
-
-                  <td className="py-4 font-bold">
-                    {team.strTeam}
-                  </td>
-
-                  <td className="py-4 text-yellow-400 font-bold">
-                    {team.intPoints}
-                  </td>
-
-                  <td className="py-4">
-                    {team.intPlayed}
-                  </td>
-
-                  <td className="py-4">
-                    {team.intWin}
-                  </td>
-
-                  <td className="py-4">
-                    {team.intDraw}
-                  </td>
-
-                  <td className="py-4">
-                    {team.intLoss}
-                  </td>
-
-                </tr>
-
-              ))}
-
+              {group.standings?.entries.map(({ team, stats }, index) => {
+                const values = Object.fromEntries(stats.map(({ name, displayValue }) => [name, displayValue]));
+                return (
+                  <tr key={team.id}>
+                    <td>{values.rank || index + 1}</td>
+                    <th scope="row"><MatchClub team={team} /></th>
+                    {columns.map(([name]) => <td key={name}>{values[name] || "–"}</td>)}
+                  </tr>
+                );
+              })}
             </tbody>
-
           </table>
-
         </div>
-
-      )}
-
-    </section>
+      ))}
+    </>
   );
 }

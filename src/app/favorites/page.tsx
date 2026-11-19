@@ -149,7 +149,7 @@ export default function FavoritesPage() {
     .reduce((a, b) => a + b, 0);
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="md-page md-inner-page min-h-screen">
 
       <Navbar />
 
