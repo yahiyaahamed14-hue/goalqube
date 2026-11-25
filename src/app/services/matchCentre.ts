@@ -6,6 +6,12 @@ export const leagues = {
   "fra.1": "Ligue 1",
   "esp.1": "La Liga",
   "uefa.champions": "UEFA Champions League",
+  "ger.1": "Bundesliga",
+  "ita.1": "Serie A",
+  "ned.1": "Eredivisie",
+  "por.1": "Primeira Liga",
+  "ksa.1": "Saudi Pro League",
+  "usa.1": "Major League Soccer (MLS)",
 };
 
 export type League = keyof typeof leagues;

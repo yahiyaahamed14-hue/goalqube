@@ -1,4 +1,5 @@
 import Navbar from "@/components/Navbar";
+import SportsDbMatchup from "@/components/SportsDbMatchup";
 import { getWorldCupMatches } from "@/app/services/footballApi";
 
 export default async function WorldCupLivePage() {
@@ -39,13 +40,7 @@ export default async function WorldCupLivePage() {
                   {match.strLeague}
                 </p>
 
-                <h2 className="text-3xl font-black mt-6">
-                  {match.strHomeTeam}
-                </h2>
-
-                <h2 className="text-3xl font-black mt-2">
-                  {match.strAwayTeam}
-                </h2>
+                <div className="mt-6"><SportsDbMatchup home={match.strHomeTeam} homeBadge={match.strHomeTeamBadge} away={match.strAwayTeam} awayBadge={match.strAwayTeamBadge} /></div>
 
                 <p className="text-zinc-400 mt-6">
                   {match.dateEvent}

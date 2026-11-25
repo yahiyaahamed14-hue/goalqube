@@ -1,78 +1,213 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { ArrowDown, ArrowRight, ArrowUpRight, BarChart3, ChevronLeft, ChevronRight, CirclePlay, Globe2, Heart, Menu, Newspaper, Search, Shield, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowRight, ArrowUpRight, BarChart3, ChevronLeft, ChevronRight, CirclePlay, Globe2, Heart, Menu, Newspaper, Shield, X } from "lucide-react";
 import Navbar from "./Navbar";
-import Brand, { FootballMark } from "./Brand";
+import { FootballMark } from "./Brand";
+import type { DirectoryTeam } from "@/app/services/teamDirectory";
+import { kickoff, leagues, matchScore, matchTeams, type Competition, type League } from "@/app/services/matchCentre";
 
-const clubs = [
-  { name: "Liverpool", short: "LFC", country: "England", color: "#a51c38", note: "The Reds", detail: "A crest. A city. A connection that runs deep.", established: "1892" },
-  { name: "Arsenal", short: "AFC", country: "England", color: "#b5262e", note: "The Gunners", detail: "North London roots. A worldwide football family.", established: "1886" },
-  { name: "Real Madrid", short: "RMA", country: "Spain", color: "#8b7654", note: "Los Blancos", detail: "Discover the stories behind the famous white shirt.", established: "1902" },
-  { name: "FC Barcelona", short: "FCB", country: "Spain", color: "#7b2444", note: "Blaugrana", detail: "Colours, culture, and a passion that connects.", established: "1899" },
-  { name: "AC Milan", short: "ACM", country: "Italy", color: "#9f2432", note: "Rossoneri", detail: "Red and black. A football story like no other.", established: "1899" },
-  { name: "Inter", short: "INT", country: "Italy", color: "#244e86", note: "Nerazzurri", detail: "Explore the blue and black side of Milan.", established: "1908" },
-  { name: "Bayern Munich", short: "FCB", country: "Germany", color: "#b8253c", note: "Die Roten", detail: "Bavarian roots and a global football following.", established: "1900" },
-  { name: "Dortmund", short: "BVB", country: "Germany", color: "#b29b0c", note: "Black & Yellow", detail: "A yellow wall. An unmistakable football culture.", established: "1909" },
+type SpotlightMatch = { id: string; league: League; match: Competition };
+type LeaguePlayer = { id: string; name: string; position: string; nationality: string; jersey?: string; photo?: string; team: string; teamId: string; teamLogo?: string; leagues: string[]; leagueCodes: League[] };
+type SpotlightClub = DirectoryTeam & { short: string; color: string; note: string };
+
+function PlayerWatchSlide({ player }: { player: LeaguePlayer }) {
+ const [photo, setPhoto] = useState(player.photo ?? "");
+ const [fallbackTried, setFallbackTried] = useState(false);
+ const initials = player.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toUpperCase();
+ useEffect(() => { setPhoto(player.photo ?? ""); setFallbackTried(false); }, [player.id, player.photo]);
+ async function loadFallbackPhoto() {
+  if (fallbackTried) return;
+  setFallbackTried(true);
+  try {
+   const params = new URLSearchParams({ league: player.leagueCodes[0] ?? "eng.1", teamId: player.teamId, team: player.team, name: player.name });
+   const response = await fetch(`/api/players/photo?${params}`);
+   if (response.ok) { const data = await response.json() as { photo?: string | null }; if (data.photo) setPhoto(data.photo); }
+  } catch { /* Use the initials if no alternate portrait is available. */ }
+ }
+ return <article className="md-player-watch-slide">
+  <div className="md-player-watch-photo"><span>{initials}</span>{photo && <img src={photo} alt={player.name} onError={() => { setPhoto(""); void loadFallbackPhoto(); }}/>}</div>
+  <div className="md-player-watch-details"><span className="md-player-watch-league">{player.leagues[0] ?? "Football"}</span><h2>{player.name}</h2><span className="md-player-watch-position">{player.position}{player.jersey ? ` · #${player.jersey}` : ""}</span><span className="md-player-watch-club">{player.teamLogo && <img src={player.teamLogo} alt=""/>}{player.team}</span></div>
+ </article>;
+}
+
+function LiveMatchSlide({ item }: { item: SpotlightMatch }) {
+ const { home, away } = matchTeams(item.match);
+ const logoFor = (team?: typeof home) => team?.team.logo || team?.team.logos?.[0]?.href;
+ const homeLogo = logoFor(home);
+ const awayLogo = logoFor(away);
+ const isLive = item.match.status.type.state === "in";
+ const score = isLive ? matchScore(item.match) ?? "–" : "VS";
+ const minute = isLive ? item.match.status.type.shortDetail || item.match.status.displayClock || "Live" : kickoff(item.match);
+ const href = `/match/${item.id}?league=${item.league}`;
+
+ return <Link className="md-live-slide" href={href} aria-label={`${home?.team.displayName ?? "Home"} ${score} ${away?.team.displayName ?? "Away"}, ${minute}`}>
+  <span className="md-live-league">{leagues[item.league]}</span>
+  <span className="md-live-scoreline">
+   <span className="md-live-team"><span className="md-live-team-name">{home?.team.shortDisplayName || home?.team.displayName || "Home"}</span>{homeLogo ? <img src={homeLogo} alt=""/> : <b>{home?.team.abbreviation || "H"}</b>}</span>
+   <strong>{score}</strong>
+   <span className="md-live-team md-live-team-away">{awayLogo ? <img src={awayLogo} alt=""/> : <b>{away?.team.abbreviation || "A"}</b>}<span className="md-live-team-name">{away?.team.shortDisplayName || away?.team.displayName || "Away"}</span></span>
+  </span>
+  <span className={`md-live-minute ${isLive ? "" : "is-upcoming"}`}><i/>{isLive ? "LIVE · " : "KICK-OFF · "}{minute}</span>
+ </Link>;
+}
+
+const fallbackClubs: SpotlightClub[] = [
+ { id: "364", slug: "liverpool", name: "Liverpool", shortName: "Liverpool", abbreviation: "LFC", leagues: ["Premier League"], short: "LFC", color: "#a51c38", note: "Club history & details" },
+ { id: "359", slug: "arsenal", name: "Arsenal", shortName: "Arsenal", abbreviation: "ARS", leagues: ["Premier League"], short: "ARS", color: "#a51c38", note: "Club history & details" },
+ { id: "86", slug: "real-madrid", name: "Real Madrid", shortName: "Real Madrid", abbreviation: "RMA", leagues: ["La Liga"], short: "RMA", color: "#a51c38", note: "Club history & details" },
+ { id: "83", slug: "barcelona", name: "Barcelona", shortName: "Barcelona", abbreviation: "FCB", leagues: ["La Liga"], short: "FCB", color: "#a51c38", note: "Club history & details" },
 ];
-const views = [
- { name: "Matches", icon: CirclePlay, title: "Every whistle. Every moment.", description: "Fixtures, results and the matches that bring us together.", href: "/matches", action: "Open match centre" },
- { name: "Clubs", icon: Shield, title: "It's more than a crest.", description: "Discover your club, its history and the colours you call home.", href: "/search", action: "Discover the clubs" },
- { name: "Stories", icon: Newspaper, title: "Beyond the scoreline.", description: "Read the headlines and stories from across the football world.", href: "/news", action: "Read football news" },
-];
-function Crest({ code, color, small = false }: { code: string; color: string; small?: boolean }) {
- return <span className={`md-crest ${small ? "md-crest-small" : ""}`} style={{ "--crest": color } as React.CSSProperties}><Shield strokeWidth={1.1}/><b>{code}</b></span>;
+function clubAccent(name: string) {
+ const key = name.toLowerCase();
+ if (key.includes("arsenal")) return "#b5262e";
+ if (key.includes("barcelona")) return "#7b2444";
+ if (key.includes("real madrid")) return "#8b7654";
+ if (key.includes("manchester city")) return "#438bb5";
+ if (key.includes("chelsea")) return "#244e86";
+ if (key.includes("dortmund")) return "#a18a0b";
+ return "#a51c38";
+}
+function Crest({ code, color, small = false, logo }: { code: string; color: string; small?: boolean; logo?: string }) {
+ return <span className={`md-crest ${small ? "md-crest-small" : ""} ${logo ? "md-crest-with-logo" : ""}`} style={{ "--crest": color } as React.CSSProperties}>{logo ? <img src={logo} alt="" loading="lazy" referrerPolicy="no-referrer"/> : <><Shield strokeWidth={1.1}/><b>{code}</b></>}</span>;
 }
 
 export default function MatchdayExperience() {
  const [spotlight, setSpotlight] = useState(0);
- const [view, setView] = useState(0);
- const [country, setCountry] = useState("All clubs");
- const [query, setQuery] = useState("");
  const [railOpen, setRailOpen] = useState(false);
+ const [clubs, setClubs] = useState<SpotlightClub[]>(fallbackClubs);
+ const [liveMatches, setLiveMatches] = useState<SpotlightMatch[]>([]);
+ const [liveIncomplete, setLiveIncomplete] = useState(false);
+ const [liveMode, setLiveMode] = useState<"live" | "upcoming">("live");
+ const [liveCount, setLiveCount] = useState(0);
+ const [liveIndex, setLiveIndex] = useState(0);
+ const liveTrack = useRef<HTMLDivElement>(null);
+ const [allPlayers, setAllPlayers] = useState<LeaguePlayer[]>([]);
+ const [playersLoading, setPlayersLoading] = useState(true);
+ const [playerLeague, setPlayerLeague] = useState<"all" | League>("all");
+ const [playerSearch, setPlayerSearch] = useState("");
+ const [watchIndex, setWatchIndex] = useState(0);
+ const playerTouchStart = useRef(0);
+ useEffect(() => {
+  const controller = new AbortController();
+  fetch("/api/team-directory", { signal: controller.signal })
+   .then((response) => response.ok ? response.json() as Promise<DirectoryTeam[]> : [])
+   .then((teams) => {
+    if (!teams.length) return;
+    const available = teams.map((team): SpotlightClub => ({
+     ...team,
+     short: team.abbreviation || team.shortName?.split(/\s+/).map((part) => part[0]).slice(0, 3).join("").toUpperCase() || team.name.split(/\s+/).map((part) => part[0]).slice(0, 3).join("").toUpperCase(),
+     color: clubAccent(team.name),
+     note: team.shortName && team.shortName.toLowerCase() !== team.name.toLowerCase() ? team.shortName : "Club history & details",
+    }));
+    setClubs(available);
+    setSpotlight(0);
+   })
+   .catch(() => undefined);
+  return () => controller.abort();
+ }, []);
+ useEffect(() => {
+  const controller = new AbortController();
+  fetch("/api/players?league=all", { signal: controller.signal })
+   .then((response) => response.ok ? response.json() as Promise<{ players: LeaguePlayer[] }> : Promise.reject())
+   .then((data) => setAllPlayers(data.players))
+   .catch(() => undefined)
+   .finally(() => { if (!controller.signal.aborted) setPlayersLoading(false); });
+  return () => controller.abort();
+ }, []);
+ useEffect(() => {
+  const controller = new AbortController();
+  const loadLive = () => fetch("/api/live-matches", { signal: controller.signal, cache: "no-store" })
+   .then((response) => response.ok ? response.json() as Promise<{ matches: SpotlightMatch[]; incomplete: boolean; mode: "live" | "upcoming"; liveCount: number }> : Promise.reject())
+   .then((data) => { setLiveMatches(data.matches); setLiveIncomplete(data.incomplete); setLiveMode(data.mode); setLiveCount(data.liveCount); setLiveIndex(0); if (liveTrack.current) liveTrack.current.scrollLeft = 0; })
+   .catch(() => { if (!controller.signal.aborted) setLiveIncomplete(true); });
+  void loadLive();
+  const timer = window.setInterval(loadLive, 30000);
+  return () => { controller.abort(); window.clearInterval(timer); };
+ }, []);
  const selected = clubs[spotlight];
- const section = views[view];
- const filtered = clubs.filter(club => (country === "All clubs" || club.country === country) && club.name.toLowerCase().includes(query.toLowerCase()));
+ const teamSlug = selected.name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+ const selectedLogo = selected.logo;
+ const teamHref = `/teams/${teamSlug}?${new URLSearchParams({ name: selected.name, league: selected.leagues.join(" · "), ...(selectedLogo ? { logo: selectedLogo } : {}) })}`;
+ const filteredWatchPlayers = allPlayers.filter((player) =>
+  (playerLeague === "all" || player.leagueCodes.includes(playerLeague)) &&
+  (!playerSearch.trim() || `${player.name} ${player.team} ${player.position}`.toLowerCase().includes(playerSearch.trim().toLowerCase()))
+ );
+ const activeWatchPlayer = filteredWatchPlayers[watchIndex];
  function changeClub(step: number) { setSpotlight(i => (i + step + clubs.length) % clubs.length); }
- return <main className="md-page">
+ function moveWatch(step: number) {
+  if (!filteredWatchPlayers.length) return;
+  const next = (watchIndex + step + filteredWatchPlayers.length) % filteredWatchPlayers.length;
+  setWatchIndex(next);
+  playerTrack.current?.scrollTo({ left: playerTrack.current.clientWidth * next, behavior: "smooth" });
+ }
+ function filterPlayers(league: "all" | League, search: string) {
+  setPlayerLeague(league);
+  setPlayerSearch(search);
+  setWatchIndex(0);
+ }
+ function moveLive(step: number) {
+  const next = (liveIndex + step + liveMatches.length) % liveMatches.length;
+  setLiveIndex(next);
+  liveTrack.current?.scrollTo({ left: liveTrack.current.clientWidth * next, behavior: "smooth" });
+ }
+
+ return <main className="md-page md-home-page">
   <div className="md-outer-type" aria-hidden="true">FOOTBALL</div>
   <div className="md-app">
    <aside className="md-rail" aria-label="Quick navigation">
     <Link href="/" className="md-rail-logo" aria-label="Goalqube home"><FootballMark/></Link>
     <button className="md-rail-menu" aria-label={railOpen ? "Close shortcuts" : "Open shortcuts"} aria-expanded={railOpen} onClick={() => setRailOpen(!railOpen)}>{railOpen ? <X size={17}/> : <Menu size={17}/>}</button>
-    <div className="md-rail-links"><Link className="md-rail-active" href="/matches" aria-label="Matches"><CirclePlay size={18}/></Link><Link href="/standings" aria-label="Standings"><BarChart3 size={18}/></Link><Link href="/search" aria-label="Find a club"><Shield size={18}/></Link><Link href="/news" aria-label="News"><Newspaper size={18}/></Link><Link href="/favorites" aria-label="Favorites"><Heart size={18}/></Link></div>
+    <div className="md-rail-links"><Link className="md-rail-active" href="/matches" aria-label="Matches"><CirclePlay size={18}/></Link><Link href="/standings" aria-label="Standings"><BarChart3 size={18}/></Link><Link href="/search" aria-label="Find a club"><Shield size={18}/></Link><Link href="/news" aria-label="News"><Newspaper size={18}/></Link><Link href="/favorites" aria-label="Favorite Team"><Heart size={18}/></Link></div>
     <span className="md-rail-label">FOR THE LOVE OF FOOTBALL</span>
     <Link href="/worldcup" className="md-rail-bottom" aria-label="World Cup"><Globe2 size={18}/></Link>
    </aside>
-   {railOpen && <div className="md-shortcuts"><span>YOUR FOOTBALL WORLD</span>{[["Match centre","/matches"],["League tables","/standings"],["Football news","/news"],["Your favorites","/favorites"],["World Cup","/worldcup"],["Player stats","/stats"],["Watch football","/watch"]].map(([label,href]) => <Link key={href} href={href}>{label}<ArrowUpRight size={14}/></Link>)}</div>}
+   {railOpen && <div className="md-shortcuts"><span>YOUR FOOTBALL WORLD</span>{[["Match centre","/matches"],["League tables","/standings"],["Football news","/news"],["Favorite Team","/favorites"],["About Goalqube","/about"],["World Cup","/worldcup"],["Player stats","/stats"],["Watch football","/watch"]].map(([label,href]) => <Link key={href} href={href}>{label}<ArrowUpRight size={14}/></Link>)}</div>}
    <div className="md-main">
     <Navbar/>
     <section className="md-hero" aria-labelledby="md-hero-heading">
+     <div className="md-haaland-backdrop" aria-hidden="true"><img src="/haaland-spotlight.jpg" alt=""/></div>
      <div className="md-hero-type" aria-hidden="true">THE GAME.</div>
      <span className="md-yellow-ring ring-top" aria-hidden="true"/><span className="md-yellow-ring ring-bottom" aria-hidden="true"/>
      <div className="md-hero-copy"><span className="md-kicker"><i/> FOOTBALL. FRONT AND CENTRE.</span><h1 id="md-hero-heading">MORE<br/>THAN A<br/><em>GAME.</em></h1><p>The clubs you love. The moments you live for.<br/>Your football world, all in one place.</p><Link href="/matches" className="md-primary">Explore matches <ArrowUpRight size={16}/></Link></div>
-     <div className="md-player-stage"><div className="md-player-halo"/><img className="md-player" src="/images/goalqube-player.png" alt="Editorial portrait of Mohamed Salah in a red football jersey" loading="eager" fetchPriority="high"/><div className="md-player-caption"><span>PLAYER SPOTLIGHT</span><strong>Mohamed Salah</strong><span className="md-caption-line"/></div></div>
-     <aside className="md-match-hub" aria-label="Explore your matchday">
-      <div className="md-hub-top"><span>YOUR MATCHDAY, REIMAGINED</span><span className="md-hub-dot"/></div>
-      <div className="md-view-tabs" role="tablist" aria-label="Explore football"><button role="tab" aria-selected={view===0} aria-controls="md-match-panel" id="md-view-0" onClick={()=>setView(0)}>Matches</button><button role="tab" aria-selected={view===1} aria-controls="md-match-panel" id="md-view-1" onClick={()=>setView(1)}>Clubs</button><button role="tab" aria-selected={view===2} aria-controls="md-match-panel" id="md-view-2" onClick={()=>setView(2)}>Stories</button></div>
-      <div className="md-hub-panel" id="md-match-panel" role="tabpanel" aria-labelledby={`md-view-${view}`}>
-       <div className="md-rivalry"><Crest code="LFC" color="#a51c38" small/><span>Liverpool <small>THE RIVALRIES</small> Arsenal</span><Crest code="AFC" color="#bb2b31" small/></div>
-       <div className="md-pitch" aria-hidden="true"><span className="md-pitch-goal goal-a"/><span className="md-pitch-goal goal-b"/><span className="md-pitch-center"/>{["a","b","c","d","e","f","g"].map((x,i)=><i key={x} className={`md-player-dot dot-${x} ${i>3?"dot-away":""}`}/>)}</div>
-       <div className="md-panel-text" key={view}><span className="md-panel-icon"><section.icon size={17}/></span><h2>{section.title}</h2><p>{section.description}</p><Link href={section.href}>{section.action}<ArrowRight size={14}/></Link></div>
+     <aside className="md-match-hub" aria-label="Players to watch">
+      <div className="md-hub-top"><span>ALL LEAGUE PLAYERS</span><span className="md-hub-dot"/></div>
+      <div className="md-player-filters"><select aria-label="Filter players by league" value={playerLeague} onChange={(event)=>filterPlayers(event.target.value as "all" | League,playerSearch)}><option value="all">All leagues</option>{Object.entries(leagues).map(([code,name])=><option key={code} value={code}>{name}</option>)}</select><input aria-label="Search players" placeholder="Search player or club" value={playerSearch} onChange={(event)=>filterPlayers(playerLeague,event.target.value)}/></div>
+      <div className="md-hub-panel md-player-watch-panel">
+       {filteredWatchPlayers.length ? <>
+        <div className="md-player-watch-track" onTouchStart={(event)=>{playerTouchStart.current=event.changedTouches[0]?.clientX ?? 0;}} onTouchEnd={(event)=>{const delta=(event.changedTouches[0]?.clientX ?? playerTouchStart.current)-playerTouchStart.current;if(Math.abs(delta)>40)moveWatch(delta<0?1:-1);}}>
+         {activeWatchPlayer && <PlayerWatchSlide key={activeWatchPlayer.id} player={activeWatchPlayer}/>}
+        </div>
+        <div className="md-player-watch-controls"><span>{String(watchIndex+1).padStart(2,"0")} / {String(filteredWatchPlayers.length).padStart(2,"0")}</span><button aria-label="Previous player" onClick={()=>moveWatch(-1)} disabled={filteredWatchPlayers.length < 2}><ChevronLeft size={13}/></button><button aria-label="Next player" onClick={()=>moveWatch(1)} disabled={filteredWatchPlayers.length < 2}><ChevronRight size={13}/></button></div>
+       </> : <div className="md-player-watch-empty">{playersLoading ? "Loading players across your leagues…" : "No players match that search."}</div>}
       </div>
       <div className="md-small-panels"><Link href="/standings"><BarChart3 size={17}/><span>The title race<small>League standings</small></span><ArrowUpRight size={13}/></Link><Link href="/news"><Newspaper size={17}/><span>Off the pitch<small>Football stories</small></span><ArrowUpRight size={13}/></Link></div>
      </aside>
-     <div className="md-club-spotlight"><div className="md-club-top"><span>CLUB SPOTLIGHT</span><div><button aria-label="Previous club" onClick={()=>changeClub(-1)}><ChevronLeft size={14}/></button><span>{String(spotlight+1).padStart(2,"0")} / 08</span><button aria-label="Next club" onClick={()=>changeClub(1)}><ChevronRight size={14}/></button></div></div><div className="md-club-name" key={selected.name}><Crest code={selected.short} color={selected.color}/><div><small>{selected.country} · EST. {selected.established}</small><h2>{selected.name}</h2><span>{selected.note}</span></div></div><Link href="/search">Discover the club <ArrowRight size={13}/></Link></div>
-     <div className="md-hero-edition"><span>THE GOALQUBE EDIT</span><span>01 — FOOTBALL CULTURE</span><a href="#the-edit" aria-label="Explore below"><ArrowDown size={16}/></a></div>
+     <div className="md-home-feature-row">
+      <div className="md-club-spotlight" style={{ "--club-accent": selected.color } as React.CSSProperties}>
+       <span className="md-club-spotlight-glow" aria-hidden="true"/>
+       <div className="md-club-watermark" aria-hidden="true">{selectedLogo ? <img src={selectedLogo} alt=""/> : <span>{selected.short}</span>}</div>
+       <div className="md-club-top"><span><i/> CLUB SPOTLIGHT</span><div><button aria-label="Previous club" onClick={()=>changeClub(-1)}><ChevronLeft size={14}/></button><span>{String(spotlight+1).padStart(2,"0")} / {String(clubs.length).padStart(2,"0")}</span><button aria-label="Next club" onClick={()=>changeClub(1)}><ChevronRight size={14}/></button></div></div>
+       <Link href={teamHref} className="md-club-name" key={selected.name}><span className="md-club-crest-frame"><Crest code={selected.short} color={selected.color} logo={selectedLogo}/></span><div><small>{selected.leagues.join(" · ")} <i/> CLUB</small><h2>{selected.name}</h2><span>{selected.note}</span></div></Link>
+       <Link className="md-club-spotlight-cta" href={teamHref}><span>DISCOVER THE CLUB</span><ArrowRight size={15}/></Link>
+      </div>
+      <section className="md-match-spotlight-wrap" aria-label="Match spotlight">
+      <article className="md-match-spotlight">
+       <div className="md-live-heading"><span className="md-match-spotlight-heading"><span className={`md-match-live-dot ${liveMode === "upcoming" ? "is-upcoming" : ""}`}/>{liveMode === "live" ? "LIVE MATCHES" : "UPCOMING MATCHES"}</span>
+        {liveMatches.length > 1 && <div className="md-live-controls"><span>{String(liveIndex + 1).padStart(2,"0")} / {String(liveMatches.length).padStart(2,"0")}</span><button aria-label={`Previous ${liveMode} match`} onClick={()=>moveLive(-1)}><ChevronLeft size={13}/></button><button aria-label={`Next ${liveMode} match`} onClick={()=>moveLive(1)}><ChevronRight size={13}/></button></div>}
+       </div>
+       {liveMatches.length ? <>
+        <div className="md-live-track" ref={liveTrack} onScroll={()=>{ if(liveTrack.current){setLiveIndex(Math.round(liveTrack.current.scrollLeft/liveTrack.current.clientWidth));} }}>
+         {liveMatches.map((item)=><LiveMatchSlide key={`${item.league}-${item.id}`} item={item}/>)}
+        </div>
+        <div className="md-match-feature-footer"><span>{liveMode === "live" ? (liveMatches.length > liveCount ? `${liveCount} LIVE · NEXT UP` : "LIVE ACROSS YOUR LEAGUES") : "NEXT ACROSS YOUR LEAGUES"}</span><Link href={`/matches?view=${liveMode}`}>{liveMode === "live" ? "ALL LIVE MATCHES" : "ALL UPCOMING MATCHES"} <ArrowRight size={13}/></Link></div>
+       </> : <div className="md-live-empty"><strong>{liveIncomplete ? "Match schedule unavailable" : "No matches found"}</strong><span>{liveIncomplete ? "Please check the Match Centre shortly." : "Upcoming fixtures will appear here."}</span><Link href={`/matches?view=${liveMode}`}>OPEN MATCH CENTRE <ArrowRight size={13}/></Link></div>}
+      </article>
+      </section>
+     </div>
+     <div className="md-hero-edition"><span>THE GOALQUBE EDIT</span><span>01 — FOOTBALL CULTURE</span></div>
     </section>
-    <div className="md-quick-strip"><span>ONE GAME.<br/><b>EVERY ANGLE.</b></span>{[["MATCH CENTRE","Fixtures & results","/matches",CirclePlay],["LEAGUE TABLES","Follow the race","/standings",BarChart3],["WORLD CUP","The world's stage","/worldcup",Globe2],["YOUR CLUBS","Find your colours","/favorites",Heart]].map(([title,subtitle,href,Icon])=>{const ItemIcon=Icon as typeof Heart; return <Link href={href as string} key={title as string}><ItemIcon size={20}/><span>{title as string}<small>{subtitle as string}</small></span><ArrowUpRight size={14}/></Link>;})}</div>
-    <section className="md-editorial" id="the-edit"><div className="md-section-title"><div><span className="md-kicker"><i/> THE FOOTBALL EDIT</span><h2>Every angle.<br/><span>All football.</span></h2></div><p>From the ninety minutes on the pitch<br/>to everything that happens around it.</p><Link href="/news">Into the football world <ArrowUpRight size={17}/></Link></div>
-     <div className="md-editorial-grid"><Link href="/matches" className="md-story md-story-stadium"><img src="/images/goalqube-stadium.png" alt="Football stadium under matchday lights" loading="lazy"/><div><span>01 / MATCHDAY</span><h3>Nothing beats<br/>the first whistle.</h3><p>Fixtures, results and your next ninety minutes.</p></div><span className="md-story-arrow"><ArrowUpRight size={20}/></span></Link><Link href="/search" className="md-story md-story-club"><span className="md-story-number" aria-hidden="true">1892</span><div className="md-story-crest" aria-hidden="true"><Shield strokeWidth={.8}/><b>YOUR<br/>CLUB.</b></div><div><span>02 / CLUB CULTURE</span><h3>Follow the crest.<br/>Feel the connection.</h3><p>Discover the clubs behind the colours.</p></div><span className="md-story-arrow"><ArrowUpRight size={20}/></span></Link><Link href="/news" className="md-story md-story-news"><span className="md-story-big" aria-hidden="true">90<span>+</span></span><div><span>03 / BEYOND THE SCORE</span><h3>The game doesn't<br/>end at full time.</h3><p>Catch up with the stories that matter.</p></div><span className="md-story-arrow"><ArrowUpRight size={20}/></span></Link></div>
-    </section>
-    <section className="md-club-section"><div className="md-section-title"><div><span className="md-kicker"><i/> FIND YOUR COLOURS</span><h2>Where do<br/><span>you belong?</span></h2></div><p>A badge on a shirt.<br/>A whole world behind it.</p><label className="md-club-search"><Search size={16}/><input type="search" placeholder="Find your club" value={query} onChange={e=>setQuery(e.target.value)} aria-label="Filter clubs by name"/></label></div><div className="md-country-tabs" aria-label="Filter clubs by country">{["All clubs","England","Spain","Italy","Germany"].map(name=><button key={name} aria-pressed={country===name} onClick={()=>setCountry(name)}>{name}</button>)}</div><div className="md-club-grid">{filtered.map(club=><Link href="/search" className="md-club-card" key={club.name}><Crest code={club.short} color={club.color}/><div><h3>{club.name}</h3><span>{club.country} · {club.note}</span></div><ArrowUpRight size={15}/></Link>)}{filtered.length===0&&<div className="md-empty"><Search size={22}/><h3>No clubs found</h3><p>Try a different name or country.</p><button onClick={()=>{setQuery("");setCountry("All clubs");}}>Show all clubs</button></div>}</div><Link className="md-all-clubs" href="/search">Discover more clubs <ArrowRight size={15}/></Link></section>
-    <section className="md-join"><div><span className="md-kicker">THE GAME IS BETTER TOGETHER.</span><h2>Your people.<br/><em>Your football.</em></h2><p>Save your favourite clubs and make Goalqube your own.</p><Link href="/signup" className="md-primary">Join the football world <ArrowUpRight size={16}/></Link></div><div className="md-join-art" aria-hidden="true"><FootballMark/><span className="md-join-orbit"/></div><Link href="/login" className="md-join-login">Already part of the game? Log in <ArrowRight size={14}/></Link></section>
-    <footer className="md-footer"><div><Link href="/" aria-label="Goalqube home"><Brand/></Link><p>For the love of football.</p></div><nav aria-label="Footer navigation"><Link href="/matches">Matches</Link><Link href="/standings">Standings</Link><Link href="/news">News</Link><Link href="/worldcup">World Cup</Link></nav><span>© {new Date().getFullYear()} Goalqube</span><a href="#md-hero-heading" aria-label="Back to top"><ArrowUpRight size={20}/></a></footer>
    </div>
   </div>
  </main>;

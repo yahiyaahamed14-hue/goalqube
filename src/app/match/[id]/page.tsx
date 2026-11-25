@@ -27,43 +27,54 @@ export default async function MatchDetailsPage({ params, searchParams }: {
     <main className="md-page md-inner-page min-h-screen">
       <Navbar />
       {state === "in" && <AutoRefresh intervalMs={30000} />}
-      <section className="md-inner-content">
-        <Link className="md-match-detail-link" href={`/matches?view=${tab}${validLeague ? `&league=${validLeague}` : ""}`}>Back to Match Centre</Link>
+      <section className="md-inner-content md-match-dashboard">
+        <Link className="md-match-detail-link md-match-dashboard-back" href={`/matches?view=${tab}${validLeague ? `&league=${validLeague}` : ""}`}><span aria-hidden="true">←</span> Back to Match Centre</Link>
         {!match || !validLeague ? (
           <h1 className="mt-6 text-3xl font-black">Match details are unavailable</h1>
         ) : (
           <>
-            <p className="mt-8 font-bold text-yellow-400">{leagues[validLeague]}</p>
-            <h1 className="mt-2 text-4xl font-black sm:text-6xl"><span className="md-match-pair"><MatchClub team={home?.team} /><span className="md-match-versus">vs</span><MatchClub team={away?.team} /></span></h1>
-            <p className="mt-5 flex flex-wrap items-center gap-3">
-              {state !== "pre" && matchScore(match) && <strong className="md-score text-2xl">{matchScore(match)}</strong>}
-              <strong>{match.status.type.detail || match.status.displayClock}</strong>
-              <time dateTime={match.date}>{kickoff(match)}</time>
-            </p>
-            <p className="mt-3 text-zinc-400">{[venue?.fullName ?? match.venue?.fullName, venue?.address?.city, venue?.address?.country].filter(Boolean).join(" · ") || "Venue unavailable"}</p>
-            {!!summary?.gameInfo?.attendance && <p className="mt-1 text-zinc-400">Attendance {summary.gameInfo.attendance.toLocaleString("en-IN")}</p>}
-            {!!summary?.gameInfo?.officials?.length && <p className="mt-1 text-zinc-400">{summary.gameInfo.officials.map((official) => [official.position?.displayName, official.displayName].filter(Boolean).join(" ")).join(" · ")}</p>}
-            <div className="mt-8 grid items-start gap-4 lg:grid-cols-2">
-              <section className="md-details-card">
-                <h2>Match events</h2>
-                {timeline.length ? <ol className="space-y-2">{timeline.map((event) => (
-                  <li key={event.id}><strong>{event.clock?.displayValue}</strong> {event.text || event.shortText || event.type?.text}</li>
+            <article className="md-match-dashboard-scoreboard">
+              <div className="md-match-dashboard-topline">
+                <span className="md-match-league-pill">{leagues[validLeague]}</span>
+                <span className={`md-match-status-pill ${state === "in" ? "is-live" : state === "pre" ? "is-upcoming" : ""}`}>
+                  {state === "in" && <i aria-hidden="true"/>}{match.status.type.detail || match.status.displayClock || "Match centre"}
+                </span>
+              </div>
+              <div className="md-match-dashboard-teams">
+                <div className="md-match-dashboard-team md-home-team"><MatchClub team={home?.team}/></div>
+                <div className="md-match-dashboard-score">
+                  {state !== "pre" && matchScore(match) ? <strong>{matchScore(match)}</strong> : <strong className="md-match-kickoff-score">VS</strong>}
+                  <span><time dateTime={match.date}>{kickoff(match)}</time></span>
+                </div>
+                <div className="md-match-dashboard-team md-away-team"><MatchClub team={away?.team}/></div>
+              </div>
+              <div className="md-match-dashboard-meta">
+                <span>{[venue?.fullName ?? match.venue?.fullName, venue?.address?.city, venue?.address?.country].filter(Boolean).join(" · ") || "Venue unavailable"}</span>
+                {!!summary?.gameInfo?.attendance && <span>Attendance {summary.gameInfo.attendance.toLocaleString("en-IN")}</span>}
+                {!!summary?.gameInfo?.officials?.length && <span>{summary.gameInfo.officials.map((official) => [official.position?.displayName, official.displayName].filter(Boolean).join(" ")).join(" · ")}</span>}
+              </div>
+            </article>
+            <div className="md-match-dashboard-grid">
+              <section className="md-details-card md-match-events-card">
+                <div className="md-dashboard-card-heading"><div><span className="md-dashboard-eyebrow">MATCHDAY</span><h2>Match events</h2></div>{state === "in" && <span className="md-card-live-tag"><i/> LIVE</span>}</div>
+                {timeline.length ? <ol className="md-match-event-list">{timeline.map((event) => (
+                  <li key={event.id}><span className="md-match-event-minute">{event.clock?.displayValue || "—"}</span><span className="md-match-event-copy">{event.text || event.shortText || event.type?.text}</span></li>
                 ))}</ol> : <p>{state === "pre" ? "Events will appear once play begins." : "Match events are unavailable."}</p>}
               </section>
-              <section className="md-details-card">
-                <h2>Team statistics</h2>
+              <section className="md-details-card md-match-stats-card">
+                <div className="md-dashboard-card-heading"><div><span className="md-dashboard-eyebrow">THE NUMBERS</span><h2>Team statistics</h2></div><span className="md-stats-icon" aria-hidden="true">%</span></div>
                 {stats.some(({ statistics }) => statistics?.length) ? (
                   <div className="grid gap-4 sm:grid-cols-2">
                     {stats.map(({ team, statistics = [] }) => (
-                      <div key={team.displayName}>
-                        <h3 className="mb-2 font-bold">{team.displayName}</h3>
-                        <dl>{statistics.map((stat) => <div key={stat.name} className="flex justify-between gap-3 py-1"><dt>{stat.label || stat.name}</dt><dd>{stat.displayValue}</dd></div>)}</dl>
+                      <div key={team.displayName} className="md-match-stat-team">
+                        <h3>{team.displayName}</h3>
+                        <dl>{statistics.map((stat) => <div key={stat.name}><dt>{stat.label || stat.name}</dt><dd>{stat.displayValue}</dd></div>)}</dl>
                       </div>
                     ))}
                   </div>
                 ) : <p>Team statistics are unavailable.</p>}
               </section>
-              <section className="md-details-card">
+              <section className="md-details-card md-match-lineups-card">
                 <h2>Lineups</h2>
                 {rosters.some(({ roster }) => roster?.length) ? (
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -78,7 +89,7 @@ export default async function MatchDetailsPage({ params, searchParams }: {
                   </div>
                 ) : <p>Lineups are unavailable.</p>}
               </section>
-              {!!commentary.length && <details className="md-details-card">
+              {!!commentary.length && <details className="md-details-card md-match-commentary-card">
                 <summary className="cursor-pointer text-xl font-bold">Match commentary</summary>
                 <ol className="mt-3 space-y-2">{commentary.map((event) => <li key={event.id}><strong>{event.clock?.displayValue}</strong> {event.text || event.shortText}</li>)}</ol>
               </details>}

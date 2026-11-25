@@ -1,2 +1,5 @@
 import MatchdayExperience from "@/components/MatchdayExperience";
-export default function HomePage() { return <MatchdayExperience />; }
+
+export default function HomePage() {
+  return <MatchdayExperience />;
+}

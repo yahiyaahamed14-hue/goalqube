@@ -1,4 +1,5 @@
 import Navbar from "@/components/Navbar";
+import SportsDbMatchup from "@/components/SportsDbMatchup";
 import {
   getLiveMatches,
   getTodayMatches,
@@ -47,17 +48,7 @@ export default async function WatchPage() {
                 {match.strLeague}
               </p>
 
-              <h2 className="text-3xl font-black mt-6">
-
-                {match.strHomeTeam}
-
-                <span className="text-yellow-400">
-                  {" "}vs{" "}
-                </span>
-
-                {match.strAwayTeam}
-
-              </h2>
+              <div className="mt-6"><SportsDbMatchup home={match.strHomeTeam} homeBadge={match.strHomeTeamBadge} away={match.strAwayTeam} awayBadge={match.strAwayTeamBadge} /></div>
 
               <p className="text-zinc-400 mt-4">
                 {match.dateEvent}
@@ -108,17 +99,7 @@ export default async function WatchPage() {
                 {match.strLeague}
               </p>
 
-              <h2 className="text-3xl font-black mt-6">
-
-                {match.strHomeTeam}
-
-                <span className="text-yellow-400">
-                  {" "}vs{" "}
-                </span>
-
-                {match.strAwayTeam}
-
-              </h2>
+              <div className="mt-6"><SportsDbMatchup home={match.strHomeTeam} homeBadge={match.strHomeTeamBadge} away={match.strAwayTeam} awayBadge={match.strAwayTeamBadge} /></div>
 
               <p className="text-zinc-400 mt-4">
                 {match.dateEvent}

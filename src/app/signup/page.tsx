@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import { ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/firebase";
+import Brand from "@/components/Brand";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -32,6 +34,11 @@ export default function SignupPage() {
     <main className="md-page md-inner-page min-h-screen flex items-center justify-center px-6">
 
       <div className="w-full max-w-md bg-white/5 border border-white/10 rounded-3xl p-8">
+
+        <div className="gq-auth-topline mb-7">
+          <Link href="/" className="gq-auth-brand" aria-label="Goalqube home"><Brand /></Link>
+          <Link href="/" className="gq-auth-home-link"><ArrowLeft size={15} aria-hidden="true" /> Home</Link>
+        </div>
 
         <h1 className="text-4xl font-black mb-6">
           Create Account

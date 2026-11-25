@@ -2,17 +2,24 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import Brand from "@/components/Brand";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [status, setStatus] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleLogin = async (
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
+    setStatus("");
+    setSubmitting(true);
 
     try {
       await signInWithEmailAndPassword(
@@ -21,65 +28,60 @@ export default function LoginPage() {
         password
       );
 
-      alert("Login successful!");
+      setStatus("Login successful.");
     } catch (error: any) {
-      alert(error.message);
+      setStatus(error.message || "We could not sign you in. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <main className="md-page md-inner-page min-h-screen flex items-center justify-center px-6">
+    <main className="md-page md-inner-page gq-auth-page min-h-screen flex items-center justify-center px-6">
+      <span className="gq-auth-decoration gq-auth-decoration-one" aria-hidden="true" />
+      <span className="gq-auth-decoration gq-auth-decoration-two" aria-hidden="true" />
+      <section className="gq-auth-card" aria-labelledby="login-title">
+        <div className="gq-auth-topline">
+          <Link href="/" className="gq-auth-brand" aria-label="Goalqube home"><Brand /></Link>
+          <Link href="/" className="gq-auth-home-link"><ArrowLeft size={15} aria-hidden="true" /> Home</Link>
+        </div>
 
-      <div className="w-full max-w-md bg-white/5 border border-white/10 rounded-3xl p-8">
+        <div className="gq-auth-intro">
+          <p>WELCOME BACK</p>
+          <h1 id="login-title">Log in<span>.</span></h1>
+          <span>Pick up where the match left off.</span>
+        </div>
 
-        <p className="text-yellow-400 font-bold tracking-[4px]">
-          GOALQUBE
-        </p>
+        <form onSubmit={handleLogin} className="gq-auth-form">
+          <label className="gq-auth-field">
+            <span>Email address</span>
+            <span className="gq-auth-input-wrap">
+              <Mail size={18} aria-hidden="true" />
+              <input type="email" autoComplete="email" required placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </span>
+          </label>
 
-        <h1 className="text-4xl font-black mt-4">
-          Welcome Back
-        </h1>
+          <label className="gq-auth-field">
+            <span>Password</span>
+            <span className="gq-auth-input-wrap">
+              <LockKeyhole size={18} aria-hidden="true" />
+              <input type={showPassword ? "text" : "password"} autoComplete="current-password" required placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <button type="button" className="gq-auth-reveal" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((visible) => !visible)}>
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </span>
+          </label>
 
-        <form
-          onSubmit={handleLogin}
-          className="mt-8 space-y-5"
-        >
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-zinc-900 text-white rounded-xl px-4 py-3"
-          />
-
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-zinc-900 text-white rounded-xl px-4 py-3"
-          />
-
-          <button
-            type="submit"
-            className="w-full bg-yellow-400 text-black font-black py-3 rounded-xl"
-          >
-            LOGIN
+          <button type="submit" className="gq-auth-submit" disabled={submitting}>
+            {submitting ? "Signing in…" : "Log in"}
+            {!submitting && <ArrowRight size={18} aria-hidden="true" />}
           </button>
+          {status && <p className="gq-auth-status" role="status">{status}</p>}
         </form>
 
-        <p className="text-zinc-400 text-center mt-6">
-          Don't have an account?
-          <Link
-            href="/signup"
-            className="text-yellow-400 ml-2"
-          >
-            Sign Up
-          </Link>
-        </p>
-
-      </div>
-
+        <p className="gq-auth-signup">New to Goalqube? <Link href="/signup">Create your account <ArrowRight size={15} aria-hidden="true" /></Link></p>
+        <p className="gq-auth-footnote"><span /> ONE GAME. EVERY ANGLE.</p>
+      </section>
     </main>
   );
 }

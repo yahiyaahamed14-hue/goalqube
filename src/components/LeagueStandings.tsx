@@ -1,17 +1,6 @@
 import MatchClub from "@/components/MatchClub";
-import { leagues, type Team } from "@/app/services/matchCentre";
-
-export const standingsLeagues = {
-  "eng.1": leagues["eng.1"],
-  "esp.1": leagues["esp.1"],
-  "fra.1": leagues["fra.1"],
-  "ind.1": leagues["ind.1"],
-  "uefa.champions": leagues["uefa.champions"],
-  "ger.1": "Bundesliga",
-  "ita.1": "Serie A",
-};
-
-type StandingsLeague = keyof typeof standingsLeagues;
+import type { Team } from "@/app/services/matchCentre";
+import type { StandingsLeague } from "@/app/services/standings";
 type Entry = { team: Team & { id: string }; stats: { name: string; displayValue: string }[] };
 type Standings = {
   season?: { displayName: string };
@@ -29,10 +18,10 @@ const columns = [
   ["points", "Pts", "Points"],
 ] as const;
 
-export default async function LeagueStandings({ league }: { league: StandingsLeague }) {
+export default async function LeagueStandings({ league, season }: { league: StandingsLeague; season: number }) {
   let data: Standings | undefined;
   try {
-    const response = await fetch(`https://site.api.espn.com/apis/v2/sports/soccer/${league}/standings`, {
+    const response = await fetch(`https://site.api.espn.com/apis/v2/sports/soccer/${league}/standings?season=${season}`, {
       next: { revalidate: 300 },
       signal: AbortSignal.timeout(8000),
     });
@@ -48,7 +37,7 @@ export default async function LeagueStandings({ league }: { league: StandingsLea
 
   return (
     <>
-      {data.season?.displayName && <p className="mt-6 text-zinc-400">{data.season.displayName}</p>}
+      <p className="mt-6 text-zinc-400">{data.season?.displayName || `${season}–${String((season + 1) % 100).padStart(2, "0")}`}</p>
       {tables.map((group) => (
         <div key={group.id} className="md-standings-panel" tabIndex={0} role="region" aria-label={group.name}>
           <table className="md-standings-table">

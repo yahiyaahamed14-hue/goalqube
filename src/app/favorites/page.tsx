@@ -9,6 +9,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 
 import Navbar from "@/components/Navbar";
+import DreamTeamBuilder from "./DreamTeamBuilder";
 
 type Team = {
   idTeam: string;
@@ -153,128 +154,36 @@ export default function FavoritesPage() {
 
       <Navbar />
 
-      {/* Header */}
-      <section className="px-6 lg:px-16 py-16">
-
-        <p className="text-yellow-400 font-bold tracking-[5px]">
-          FAN COMMUNITY
-        </p>
-
-        <h1 className="text-5xl lg:text-7xl font-black mt-4">
-          FAVORITE TEAMS
-        </h1>
-
+      <section className="gq-favorite-hero">
+        <span>FAN COMMUNITY · YOUR LINEUP</span>
+        <h1>Favorite Team</h1>
+        <p>Choose your formation. Pick your players. Make the pitch yours.</p>
       </section>
 
-      {/* Search */}
-      <section className="px-6 lg:px-16">
+      <section className="gq-favorite-builder" aria-label="Create your dream team">
+        <DreamTeamBuilder />
+      </section>
 
-        <div className="bg-white/5 border border-white/10 rounded-[30px] p-6">
-
-          <input
-            type="text"
-            placeholder="Search football clubs..."
-            value={search}
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
-            className="w-full bg-transparent outline-none text-2xl text-white placeholder:text-zinc-500"
-          />
-
+      <section className="gq-favorite-clubs" aria-labelledby="favorite-clubs-title">
+        <div className="gq-favorite-clubs-head">
+          <div><span>BACK YOUR CLUB</span><h2 id="favorite-clubs-title">Favorite clubs</h2><p>Choose a club to show your support.</p></div>
+          <label className="gq-favorite-search"><span className="sr-only">Search football clubs</span><input type="search" placeholder="Search clubs..." value={search} onChange={(event) => setSearch(event.target.value)} /><span>{filteredTeams.length} clubs</span></label>
         </div>
-
-      </section>
-
-      {/* Teams */}
-      <section className="px-6 lg:px-16 py-16">
-
-        <div className="space-y-8">
-
+        <div className="gq-favorite-club-grid">
           {filteredTeams.map((team) => {
-
-            const teamVotes =
-              votes[team.idTeam] || 0;
-
-            const percentage =
-              totalVotes > 0
-                ? (
-                    (teamVotes / totalVotes) *
-                    100
-                  ).toFixed(1)
-                : 0;
-
+            const teamVotes = votes[team.idTeam] || 0;
+            const percentage = totalVotes > 0 ? Number(((teamVotes / totalVotes) * 100).toFixed(1)) : 0;
             return (
-
-              <div
-                key={team.idTeam}
-                className="bg-white/5 border border-white/10 rounded-[30px] p-8"
-              >
-
-                {/* Top */}
-                <div className="flex items-center justify-between gap-6">
-
-                  <div className="flex items-center gap-5">
-
-                    <img
-                      src={team.strBadge}
-                      alt={team.strTeam}
-                      className="w-20 h-20 object-contain"
-                    />
-
-                    <h2 className="text-3xl font-black">
-                      {team.strTeam}
-                    </h2>
-
-                  </div>
-
-                  <p className="text-yellow-400 font-black text-2xl">
-                    {percentage}%
-                  </p>
-
-                </div>
-
-                {/* Progress */}
-                <div className="w-full h-5 bg-white/10 rounded-full mt-6 overflow-hidden">
-
-                  <div
-                    className="h-full bg-yellow-400 rounded-full"
-                    style={{
-                      width: `${percentage}%`,
-                    }}
-                  />
-
-                </div>
-
-                {/* Bottom */}
-                <div className="flex items-center justify-between mt-6">
-
-                  <p className="text-zinc-400">
-                    {teamVotes} Fans
-                  </p>
-
-                  <button
-                    onClick={() =>
-                      voteTeam(
-                        team.idTeam,
-                        team.strTeam
-                      )
-                    }
-                    className="bg-yellow-400 text-black px-6 py-3 rounded-full font-black hover:scale-105 transition"
-                  >
-
-                    ❤️ Vote
-
-                  </button>
-
-                </div>
-
-              </div>
-
+              <article className="gq-favorite-club-card" key={team.idTeam}>
+                <div className="gq-favorite-club-top"><span>FAN PICK</span><strong>{percentage}%</strong></div>
+                <div className="gq-favorite-club-info"><span className="gq-favorite-crest"><img src={team.strBadge} alt="" loading="lazy" /></span><h3>{team.strTeam}</h3></div>
+                <div className="gq-favorite-meter"><i style={{ width: `${percentage}%` }} /></div>
+                <div className="gq-favorite-club-bottom"><span>{teamVotes} fans</span><button type="button" onClick={() => voteTeam(team.idTeam, team.strTeam)}>❤️ Vote</button></div>
+              </article>
             );
           })}
-
+          {!filteredTeams.length && <p className="gq-favorite-no-results">No clubs match that search.</p>}
         </div>
-
       </section>
 
     </main>

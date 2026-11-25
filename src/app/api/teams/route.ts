@@ -8,11 +8,17 @@ export async function GET() {
   try {
 
     const leagues = [
+      "Indian Super League",
       "English Premier League",
-      "Spanish La Liga",
-      "Italian Serie A",
-      "German Bundesliga",
       "French Ligue 1",
+      "Spanish La Liga",
+      "UEFA Champions League",
+      "German Bundesliga",
+      "Italian Serie A",
+      "Dutch Eredivisie",
+      "Portuguese Primeira Liga",
+      "Saudi Pro League",
+      "American Major League Soccer",
     ];
 
     let allTeams: any[] = [];
