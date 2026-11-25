@@ -140,7 +140,6 @@ export default function MatchdayExperience() {
   if (!filteredWatchPlayers.length) return;
   const next = (watchIndex + step + filteredWatchPlayers.length) % filteredWatchPlayers.length;
   setWatchIndex(next);
-  playerTrack.current?.scrollTo({ left: playerTrack.current.clientWidth * next, behavior: "smooth" });
  }
  function filterPlayers(league: "all" | League, search: string) {
   setPlayerLeague(league);
